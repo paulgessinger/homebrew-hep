@@ -49,7 +49,7 @@ class Dd4hep < Formula
     # Include ROOT here so its dictionaries can autoload in a clean shell.
     inreplace "cmake/thisdd4hep_only.sh",
               "#----PYTHONPATH",
-              <<~SH
+              <<~SH.chomp
                 dd4hep_add_library_path #{formula_opt_lib("root")}/root;
                 dd4hep_add_library_path #{formula_opt_lib("paulgessinger/hep/geant4")};
                 dd4hep_add_path ROOT_INCLUDE_PATH #{formula_opt_prefix("paulgessinger/hep/geant4")}/include/Geant4;
