@@ -54,6 +54,34 @@ target_link_libraries(my_detector PRIVATE DD4hep::DDCore)
 
 Configure with `-DDD4hep_DIR="$(brew --prefix dd4hep)/cmake"`.
 
+## Geant4
+
+```sh
+brew install paulgessinger/hep/geant4
+source "$(brew --prefix geant4)/bin/geant4.sh"
+```
+
+Geant4 11.4.3 is built with C++20, shared libraries, multithreading and GDML
+support through Xerces-C. It uses upstream's bundled CLHEP and PTL, and system
+Expat and zlib. Qt and OpenGL visualization are disabled. DD4hep remains built
+without Geant4/DDG4; installing this formula does not change that build.
+
+All twelve standard physics datasets are installed under
+`$(brew --prefix geant4)/share/geant4/data`. They are pinned Homebrew resources
+with SHA-256 checksums, so neither the CMake build nor the first simulation
+downloads data. The optional TENDL, NuDEXLib and URRPT datasets are not included.
+The datasets make the download and installed package substantially larger than
+the libraries alone.
+
+For CMake clients, use `find_package(Geant4 REQUIRED gdml multithreaded)` and
+configure with `-DGeant4_DIR="$(brew --prefix geant4)/lib/cmake/Geant4"`.
+The formula test builds a separate CMake client, writes a water geometry to
+GDML, and transports five photons with FTFP_BERT using two worker threads.
+
+This product includes software developed by Members of the Geant4
+Collaboration (https://cern.ch/geant4). The upstream Geant4 Software License
+is installed with the package.
+
 ## Local development
 
 To work directly from a checkout, register it as a local tap. If the tap is
@@ -110,11 +138,12 @@ published. The publishing workflow adds their URLs and checksums.
 
 ROOT or Python major/minor upgrades can require a DD4hep formula revision and
 new bottles. Re-run the installed-package tests when these dependencies change.
-Geant4 support is deferred to a separate change.
+Enabling Geant4/DDG4 in DD4hep is deferred to a separate change.
 
 ## References
 
 - [DD4hep](https://github.com/AIDASoft/DD4hep)
+- [Geant4](https://github.com/Geant4/geant4)
 - [Homebrew tap maintenance](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap)
 - [Homebrew bottles](https://docs.brew.sh/Bottles)
 - [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
