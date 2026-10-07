@@ -7,10 +7,9 @@ class Geant4 < Formula
 
   depends_on "cmake" => [:build, :test]
   depends_on "ninja" => :build
+  depends_on "expat"
   depends_on "xerces-c"
-
-  uses_from_macos "expat"
-  uses_from_macos "zlib"
+  depends_on "zlib"
 
   resource "G4NDL" do
     url "https://cern.ch/geant4-data/datasets/G4NDL.4.7.1.tar.gz"
@@ -85,6 +84,9 @@ class Geant4 < Formula
                     "-DGEANT4_USE_SYSTEM_EXPAT=ON",
                     "-DGEANT4_USE_SYSTEM_ZLIB=ON",
                     "-DGEANT4_USE_SYSTEM_CLHEP=OFF",
+                    "-DEXPAT_ROOT=#{formula_opt_prefix("expat")}",
+                    "-DZLIB_ROOT=#{formula_opt_prefix("zlib")}",
+                    "-DGEANT4_INSTALL_PACKAGE_CACHE=ON",
                     "-DGEANT4_USE_QT=OFF",
                     "-DGEANT4_USE_OPENGL_X11=OFF",
                     "-DGEANT4_INSTALL_DATA=OFF",
@@ -168,7 +170,7 @@ class Geant4 < Formula
       }
     CPP
 
-    system "cmake", "-S", ".", "-B", "build", "-DGeant4_DIR=#{lib}/cmake/Geant4"
+    system "cmake", "-S", ".", "-B", "build", "-DGeant4_DIR=#{lib}/cmake/Geant4", *std_cmake_args
     system "cmake", "--build", "build"
     system "bash", "-c", "source '#{bin}/geant4.sh' && exec '#{testpath}/build/geant4_test'"
     assert_path_exists testpath/"world.gdml"

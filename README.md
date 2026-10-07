@@ -62,8 +62,9 @@ source "$(brew --prefix geant4)/bin/geant4.sh"
 ```
 
 Geant4 11.4.3 is built with C++20, shared libraries, multithreading and GDML
-support through Xerces-C. It uses upstream's bundled CLHEP and PTL, and system
-Expat and zlib. Qt and OpenGL visualization are disabled. DD4hep remains built
+support through Xerces-C. It uses upstream's bundled CLHEP and PTL, and Homebrew
+Expat and zlib. The exported CMake package records these dependency locations
+to avoid macOS SDK header-ordering problems. Qt and OpenGL visualization are disabled. DD4hep remains built
 without Geant4/DDG4; installing this formula does not change that build.
 
 All twelve standard physics datasets are installed under
