@@ -112,7 +112,7 @@ geometry through the installed `DD4hep_BoxSegment` plugin, checks its geometry,
 then loads the same geometry using Python after sourcing the setup script.
 It also links the installed `DD4hep::DDG4` target, then uses DDG4's Python
 bindings to convert that geometry to Geant4, transport three photons with
-FTFP_BERT, and verify three events in the ROOT output file.
+FTFP_BERT, and verify Geant4's completed-event count.
 
 ## Bottles on GitHub Packages
 

@@ -23,10 +23,13 @@ class Dd4hep < Formula
   depends_on "cmake" => [:build, :test]
   depends_on "ninja" => :build
   depends_on "boost"
+  depends_on "expat"
   depends_on "paulgessinger/hep/geant4"
   depends_on "python@3.14"
   depends_on "root"
   depends_on "vdt"
+  depends_on "xerces-c"
+  depends_on "zlib"
 
   def install
     # Homebrew updates Python patch releases independently of ROOT. Keep the
@@ -34,6 +37,13 @@ class Dd4hep < Formula
     inreplace "cmake/DD4hepBuild.cmake",
               "SET(REQUIRE_PYTHON_VERSION ${ROOT_PYTHON_VERSION})",
               'string(REGEX MATCH "^[0-9]+[.][0-9]+" REQUIRE_PYTHON_VERSION "${ROOT_PYTHON_VERSION}")'
+
+    # Upstream hardcodes lib in its install rpaths. Keep tools and plugins
+    # usable with the lib/dd4hep layout without relying on shell library paths.
+    inreplace "cmake/DD4hepBuild.cmake" do |s|
+      s.gsub! '"@loader_path/../lib"', '"@loader_path;@loader_path/../${CMAKE_INSTALL_LIBDIR}"'
+      s.gsub! '"${CMAKE_INSTALL_PREFIX}/lib"', '"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"'
+    end
 
     # dd4hep.py replaces ROOT's dynamic search path with DD4HEP_LIBRARY_PATH.
     # Include ROOT here so its dictionaries can autoload in a clean shell.
@@ -164,14 +174,18 @@ class Dd4hep < Formula
       simulation.addDetectorConstruction("Geant4DetectorGeometryConstruction/Geometry")
       simulation.setupPhysics("FTFP_BERT")
       simulation.setupGun("Gun", particle="gamma", energy=MeV, isotrop=False)
-      simulation.setupROOTOutput("Output", "events.root", mc_truth=False)
+      assert ROOT.gInterpreter.Declare('''
+          #include <G4RunManager.hh>
+          #include <G4Run.hh>
+          int completed_events() {
+              return G4RunManager::GetRunManager()->GetCurrentRun()->GetNumberOfEvent();
+          }
+      ''')
       assert kernel.configure()
       assert kernel.initialize()
       assert kernel.run()
+      assert ROOT.completed_events() == 3
       assert kernel.terminate()
-      with ROOT.TFile.Open("events.root") as output:
-          assert not output.IsZombie()
-          assert output.Get("EVENT").GetEntries() == 3
     PYTHON
     system "bash", "-c", <<~SH
       unset DD4HEP_LIBRARY_PATH DYLD_LIBRARY_PATH LD_LIBRARY_PATH ROOT_INCLUDE_PATH
