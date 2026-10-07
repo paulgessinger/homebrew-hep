@@ -42,6 +42,8 @@ class Dd4hep < Formula
     # ROOT dictionaries and clients must use the same C++ standard as ROOT.
     cxx_standard = Utils.safe_popen_read(formula_opt_bin("root")/"root-config", "--cxxstandard").strip
 
+    # Keep ROOT dictionaries and plugin metadata beside their libraries in a
+    # package subdirectory, as required by Homebrew's new-formula audit.
     system "cmake", "-S", ".", "-B", "build", "-G", "Ninja",
                     "-DCMAKE_CXX_STANDARD=#{cxx_standard}",
                     "-DROOT_DIR=#{formula_opt_prefix("root")}/share/root/cmake",
@@ -52,7 +54,8 @@ class Dd4hep < Formula
                     "-DDD4HEP_BUILD_EXAMPLES=OFF",
                     "-DBUILD_DOCS=OFF",
                     "-DBUILD_TESTING=OFF",
-                    *std_cmake_args
+                    *std_cmake_args,
+                    "-DCMAKE_INSTALL_LIBDIR=lib/dd4hep"
     system "cmake", "--build", "build"
     system "cmake", "--install", "build"
   end
@@ -123,10 +126,10 @@ class Dd4hep < Formula
       target_link_libraries(dd4hep_test PRIVATE DD4hep::DDCore)
     CMAKE
 
-    ENV.prepend_path "DD4HEP_LIBRARY_PATH", lib
+    ENV.prepend_path "DD4HEP_LIBRARY_PATH", lib/"dd4hep"
     ENV.prepend_path "ROOT_INCLUDE_PATH", include
-    ENV.prepend_path "DYLD_LIBRARY_PATH", lib if OS.mac?
-    ENV.prepend_path "LD_LIBRARY_PATH", lib if OS.linux?
+    ENV.prepend_path "DYLD_LIBRARY_PATH", lib/"dd4hep" if OS.mac?
+    ENV.prepend_path "LD_LIBRARY_PATH", lib/"dd4hep" if OS.linux?
     system "cmake", "-S", ".", "-B", "build", "-DDD4hep_DIR=#{prefix}/cmake"
     system "cmake", "--build", "build"
     system testpath/"build/dd4hep_test"
