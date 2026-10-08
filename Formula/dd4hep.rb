@@ -5,7 +5,7 @@ class Dd4hep < Formula
   version "1.38.0"
   sha256 "8a11c42cfd2026faae421260bc3dea9f61c78ebacd1f9ba1b0ca3ff054425ffd"
   license "LGPL-3.0-or-later"
-  revision 1
+  revision 2
 
   livecheck do
     url :stable
