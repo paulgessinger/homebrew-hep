@@ -18,6 +18,11 @@ class Dd4hep < Formula
     end
   end
 
+  bottle do
+    root_url "https://ghcr.io/v2/paulgessinger/hep"
+    sha256 arm64_tahoe: "5461fda546e4b99ccdced590cbebc1ab44f4210ccafa1bfec816eed8bbc5c7ff"
+  end
+
   keg_only "its JSON headers conflict with jsoncpp on case-insensitive filesystems"
 
   depends_on "cmake" => [:build, :test]
