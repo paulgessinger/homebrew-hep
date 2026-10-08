@@ -4,6 +4,7 @@ class Geant4 < Formula
   url "https://github.com/Geant4/geant4/archive/refs/tags/v11.4.3.tar.gz"
   sha256 "9744527a2eb2cbc37f15b554fd653379fea57294e15fffa2db83fd484366c89d"
   license :cannot_represent # Geant4 Software License, version 1.0
+  revision 1
 
   depends_on "cmake" => [:build, :test]
   depends_on "ninja" => :build
@@ -80,6 +81,7 @@ class Geant4 < Formula
     system "cmake", "-S", ".", "-B", "build", "-G", "Ninja",
                     "-DCMAKE_CXX_STANDARD=20",
                     "-DGEANT4_BUILD_MULTITHREADED=ON",
+                    "-DGEANT4_BUILD_TLS_MODEL=global-dynamic",
                     "-DGEANT4_USE_GDML=ON",
                     "-DGEANT4_USE_SYSTEM_EXPAT=ON",
                     "-DGEANT4_USE_SYSTEM_ZLIB=ON",

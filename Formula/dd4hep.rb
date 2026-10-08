@@ -5,6 +5,7 @@ class Dd4hep < Formula
   version "1.38.0"
   sha256 "8a11c42cfd2026faae421260bc3dea9f61c78ebacd1f9ba1b0ca3ff054425ffd"
   license "LGPL-3.0-or-later"
+  revision 1
 
   livecheck do
     url :stable
@@ -22,9 +23,13 @@ class Dd4hep < Formula
   depends_on "cmake" => [:build, :test]
   depends_on "ninja" => :build
   depends_on "boost"
+  depends_on "expat"
+  depends_on "paulgessinger/hep/geant4"
   depends_on "python@3.14"
   depends_on "root"
   depends_on "vdt"
+  depends_on "xerces-c"
+  depends_on "zlib"
 
   def install
     # Homebrew updates Python patch releases independently of ROOT. Keep the
@@ -33,11 +38,23 @@ class Dd4hep < Formula
               "SET(REQUIRE_PYTHON_VERSION ${ROOT_PYTHON_VERSION})",
               'string(REGEX MATCH "^[0-9]+[.][0-9]+" REQUIRE_PYTHON_VERSION "${ROOT_PYTHON_VERSION}")'
 
+    # Upstream hardcodes lib in its install rpaths. Keep tools and plugins
+    # usable with the lib/dd4hep layout without relying on shell library paths.
+    inreplace "cmake/DD4hepBuild.cmake" do |s|
+      s.gsub! '"@loader_path/../lib"', '"@loader_path;@loader_path/../${CMAKE_INSTALL_LIBDIR}"'
+      s.gsub! '"${CMAKE_INSTALL_PREFIX}/lib"', '"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"'
+    end
+
     # dd4hep.py replaces ROOT's dynamic search path with DD4HEP_LIBRARY_PATH.
     # Include ROOT here so its dictionaries can autoload in a clean shell.
     inreplace "cmake/thisdd4hep_only.sh",
               "#----PYTHONPATH",
-              "dd4hep_add_library_path #{formula_opt_lib("root")}/root;\n#----PYTHONPATH"
+              <<~SH.chomp
+                dd4hep_add_library_path #{formula_opt_lib("root")}/root;
+                dd4hep_add_library_path #{formula_opt_lib("paulgessinger/hep/geant4")};
+                dd4hep_add_path ROOT_INCLUDE_PATH #{formula_opt_prefix("paulgessinger/hep/geant4")}/include/Geant4;
+                #----PYTHONPATH
+              SH
 
     # ROOT dictionaries and clients must use the same C++ standard as ROOT.
     cxx_standard = Utils.safe_popen_read(formula_opt_bin("root")/"root-config", "--cxxstandard").strip
@@ -48,7 +65,8 @@ class Dd4hep < Formula
                     "-DCMAKE_CXX_STANDARD=#{cxx_standard}",
                     "-DROOT_DIR=#{formula_opt_prefix("root")}/share/root/cmake",
                     "-DPython_EXECUTABLE=#{formula_opt_bin("python@3.14")}/python3.14",
-                    "-DDD4HEP_USE_GEANT4=OFF",
+                    "-DDD4HEP_USE_GEANT4=ON",
+                    "-DGeant4_DIR=#{formula_opt_lib("paulgessinger/hep/geant4")}/cmake/Geant4",
                     "-DDD4HEP_USE_XERCESC=OFF",
                     "-DDD4HEP_DISABLE_PACKAGES=DDCAD",
                     "-DDD4HEP_BUILD_EXAMPLES=OFF",
@@ -62,9 +80,10 @@ class Dd4hep < Formula
 
   def caveats
     <<~EOS
-      Geant4/DDG4 and CAD support are not included.
+      Geant4/DDG4 simulation support is included. CAD support is not included.
 
       Set up DD4hep in bash or zsh before using its tools or Python bindings:
+        source #{formula_opt_bin("paulgessinger/hep/geant4")}/geant4.sh
         source #{opt_bin}/thisdd4hep_only.sh
 
       Use Homebrew's Python 3.14 for the bindings:
@@ -117,20 +136,20 @@ class Dd4hep < Formula
     (testpath/"CMakeLists.txt").write <<~CMAKE
       cmake_minimum_required(VERSION 3.16)
       project(dd4hep_test LANGUAGES CXX)
-      find_package(DD4hep REQUIRED CONFIG COMPONENTS DDCore)
-      if(DD4HEP_USE_GEANT4 OR TARGET DD4hep::DDG4)
-        message(FATAL_ERROR "This formula must not enable Geant4")
+      find_package(DD4hep REQUIRED CONFIG COMPONENTS DDCore DDG4)
+      if(NOT DD4HEP_USE_GEANT4 OR NOT TARGET DD4hep::DDG4)
+        message(FATAL_ERROR "This formula must enable Geant4/DDG4")
       endif()
       add_executable(dd4hep_test test.cpp)
       target_compile_features(dd4hep_test PRIVATE cxx_std_${DD4hep_BUILD_CXX_STANDARD})
-      target_link_libraries(dd4hep_test PRIVATE DD4hep::DDCore)
+      target_link_libraries(dd4hep_test PRIVATE DD4hep::DDCore DD4hep::DDG4)
     CMAKE
 
     ENV.prepend_path "DD4HEP_LIBRARY_PATH", lib/"dd4hep"
     ENV.prepend_path "ROOT_INCLUDE_PATH", include
     ENV.prepend_path "DYLD_LIBRARY_PATH", lib/"dd4hep" if OS.mac?
     ENV.prepend_path "LD_LIBRARY_PATH", lib/"dd4hep" if OS.linux?
-    system "cmake", "-S", ".", "-B", "build", "-DDD4hep_DIR=#{prefix}/cmake"
+    system "cmake", "-S", ".", "-B", "build", "-DDD4hep_DIR=#{prefix}/cmake", *std_cmake_args
     system "cmake", "--build", "build"
     system testpath/"build/dd4hep_test"
 
@@ -142,10 +161,38 @@ class Dd4hep < Formula
       detector.fromCompact("compact.xml")
       assert detector.detector("TestBox").id() == 1
     PYTHON
+    (testpath/"simulation.py").write <<~PYTHON
+      import DDG4
+      import ROOT
+      from g4units import MeV
+
+      kernel = DDG4.Kernel()
+      kernel.loadGeometry("file:#{testpath}/compact.xml")
+      simulation = DDG4.Geant4(kernel)
+      kernel.UI = ""
+      kernel.NumEvents = 3
+      simulation.addDetectorConstruction("Geant4DetectorGeometryConstruction/Geometry")
+      simulation.setupPhysics("FTFP_BERT")
+      simulation.setupGun("Gun", particle="gamma", energy=MeV, isotrop=False)
+      assert ROOT.gInterpreter.Declare('''
+          #include <G4RunManager.hh>
+          #include <G4Run.hh>
+          int completed_events() {
+              return G4RunManager::GetRunManager()->GetCurrentRun()->GetNumberOfEvent();
+          }
+      ''')
+      assert kernel.configure()
+      assert kernel.initialize()
+      assert kernel.run()
+      assert ROOT.completed_events() == 3
+      assert kernel.terminate()
+    PYTHON
     system "bash", "-c", <<~SH
       unset DD4HEP_LIBRARY_PATH DYLD_LIBRARY_PATH LD_LIBRARY_PATH ROOT_INCLUDE_PATH
+      source "#{formula_opt_bin("paulgessinger/hep/geant4")}/geant4.sh"
       source "#{bin}/thisdd4hep_only.sh"
-      exec "#{formula_opt_bin("python@3.14")}/python3.14" "#{testpath}/test.py"
+      "#{formula_opt_bin("python@3.14")}/python3.14" "#{testpath}/test.py" || exit $?
+      exec "#{formula_opt_bin("python@3.14")}/python3.14" "#{testpath}/simulation.py"
     SH
   end
 end

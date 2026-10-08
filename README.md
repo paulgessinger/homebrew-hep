@@ -9,6 +9,7 @@ After the repository is published:
 
 ```sh
 brew install paulgessinger/hep/dd4hep
+source "$(brew --prefix geant4)/bin/geant4.sh"
 source "$(brew --prefix dd4hep)/bin/thisdd4hep_only.sh"
 "$(brew --prefix python@3.14)/bin/python3.14" -c 'import dd4hep'
 ```
@@ -28,12 +29,13 @@ Intel macOS and Linux are not yet validated.
 
 The formula packages DD4hep 1.38.0 (upstream tag `v01-38`) against Homebrew's
 `root`, `boost`, `python@3.14`, and `vdt` (linked through ROOT's exported targets).
+Simulation uses this tap's `paulgessinger/hep/geant4` formula.
 CMake and Ninja are build dependencies.
 The C++ standard is read from `root-config --cxxstandard`.
 
 Included: detector geometry, DDRec, DDDetectors, DDCond, DDAlign, DDDigi,
-DDEve and utility applications, with ROOT dictionaries and Python bindings.
-Geant4/DDG4, CAD/Assimp, LCIO, EDM4hep, HepMC3 and TBB integration are disabled.
+DDEve, Geant4/DDG4 simulation and utility applications, with ROOT dictionaries
+and Python bindings. CAD/Assimp, LCIO, EDM4hep, HepMC3 and TBB integration are disabled.
 The XML backend is bundled TinyXML. Upstream examples, documentation and the
 upstream test suite are not built; `brew test` runs an installed-package test.
 
@@ -41,8 +43,9 @@ Homebrew upgrades Python patch releases independently of ROOT. A small CMake
 adjustment requires the same Python major/minor as ROOT, while allowing patch
 updates. It also applies to installed CMake files used by downstream projects.
 The broader upstream `DD4HEP_RELAX_PYVER` switch remains disabled.
-The DD4hep-only setup script also includes Homebrew ROOT's library directory,
-which DD4hep's Python loader needs for dictionary autoloading in a clean shell.
+The DD4hep-only setup script includes ROOT and Geant4 library paths and Geant4
+headers for dictionary autoloading. Source `geant4.sh` first to configure the
+physics datasets for simulation.
 
 For a CMake consumer:
 
@@ -53,6 +56,7 @@ target_link_libraries(my_detector PRIVATE DD4hep::DDCore)
 ```
 
 Configure with `-DDD4hep_DIR="$(brew --prefix dd4hep)/cmake"`.
+Simulation clients can also request the `DDG4` component and link `DD4hep::DDG4`.
 
 ## Geant4
 
@@ -64,8 +68,9 @@ source "$(brew --prefix geant4)/bin/geant4.sh"
 Geant4 11.4.3 is built with C++20, shared libraries, multithreading and GDML
 support through Xerces-C. It uses upstream's bundled CLHEP and PTL, and Homebrew
 Expat and zlib. The exported CMake package records these dependency locations
-to avoid macOS SDK header-ordering problems. Qt and OpenGL visualization are disabled. DD4hep remains built
-without Geant4/DDG4; installing this formula does not change that build.
+to avoid macOS SDK header-ordering problems. Qt and OpenGL visualization are disabled.
+The thread-local storage model is `global-dynamic`, as required by DD4hep's
+plugin-based simulation integration.
 
 All twelve standard physics datasets are installed under
 `$(brew --prefix geant4)/share/geant4/data`. They are pinned Homebrew resources
@@ -105,7 +110,9 @@ Homebrew may upgrade dependencies during builds.
 The formula test compiles a separate CMake consumer, loads a compact XML
 geometry through the installed `DD4hep_BoxSegment` plugin, checks its geometry,
 then loads the same geometry using Python after sourcing the setup script.
-It also checks that the installed CMake package has no DDG4 target.
+It also links the installed `DD4hep::DDG4` target, then uses DDG4's Python
+bindings to convert that geometry to Geant4, transport three photons with
+FTFP_BERT, and verify Geant4's completed-event count.
 
 ## Bottles on GitHub Packages
 
@@ -137,9 +144,16 @@ For the first release:
 There is intentionally no `bottle do` block until real bottles have been
 published. The publishing workflow adds their URLs and checksums.
 
+Each formula has its own bottle. The current CI runs one job per platform,
+building changed formulae in dependency order. Dependencies with compatible
+published bottles are installed from those bottles; they do not need to be
+compiled again. Separate jobs can also exchange bottle artifacts, provided
+the downstream job installs the matching dependency bottle before building.
+Until the Geant4 bottle is published, fresh DD4hep builds compile it from source.
+
 ROOT or Python major/minor upgrades can require a DD4hep formula revision and
 new bottles. Re-run the installed-package tests when these dependencies change.
-Enabling Geant4/DDG4 in DD4hep is deferred to a separate change.
+Geant4 upgrades can also require rebuilding and retesting DD4hep.
 
 ## References
 
