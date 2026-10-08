@@ -6,6 +6,11 @@ class Geant4 < Formula
   license :cannot_represent # Geant4 Software License, version 1.0
   revision 2
 
+  bottle do
+    root_url "https://ghcr.io/v2/paulgessinger/hep"
+    sha256 arm64_tahoe: "ef61dead143cf2d17adca1fc9f056b343114105e92b9b0bcbb11cb101f6d6a5d"
+  end
+
   depends_on "cmake" => [:build, :test]
   depends_on "ninja" => :build
   depends_on "expat"
