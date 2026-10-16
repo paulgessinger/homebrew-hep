@@ -8,6 +8,7 @@ class Geomodel < Formula
   depends_on "cmake" => [:build, :test]
   depends_on "ninja" => :build
   depends_on "eigen"
+  depends_on "expat"
   depends_on "nlohmann-json"
   depends_on "paulgessinger/hep/geant4"
   depends_on "sqlite"

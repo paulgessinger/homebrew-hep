@@ -97,7 +97,7 @@ brew install paulgessinger/hep/geomodel
 GeoModel 6.32.0 is built with C++20 and includes GeoModelCore, GeoModelIO and
 GeoModelTools, including XML/GDML conversion and SQLite geometry storage.
 GeoModelG4 provides geometry conversion using this tap's `paulgessinger/hep/geant4`.
-It uses Homebrew's Eigen, nlohmann-json, SQLite, Xerces-C and zlib.
+It uses Homebrew's Eigen, Expat, nlohmann-json, SQLite, Xerces-C and zlib.
 Visualization, FullSimLight/FSL, examples and upstream tests are
 disabled. The formula test builds a separate CMake consumer and checks a
 geometry's name, material and volume after a SQLite write/read round trip,
