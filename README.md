@@ -96,10 +96,12 @@ brew install paulgessinger/hep/geomodel
 
 GeoModel 6.32.0 is built with C++20 and includes GeoModelCore, GeoModelIO and
 GeoModelTools, including XML/GDML conversion and SQLite geometry storage.
+GeoModelG4 provides geometry conversion using this tap's `paulgessinger/hep/geant4`.
 It uses Homebrew's Eigen, nlohmann-json, SQLite, Xerces-C and zlib.
-Visualization, GeoModelG4, FullSimLight/FSL, examples and upstream tests are
+Visualization, FullSimLight/FSL, examples and upstream tests are
 disabled. The formula test builds a separate CMake consumer and checks a
-geometry's name, material and volume after a SQLite write/read round trip.
+geometry's name, material and volume after a SQLite write/read round trip,
+then verifies conversion to a Geant4 volume and material.
 
 For CMake clients:
 
@@ -111,6 +113,10 @@ target_link_libraries(my_detector PRIVATE
 ```
 
 Configure with `-DCMAKE_PREFIX_PATH="$(brew --prefix geomodel)"`.
+For Geant4 conversion, also call `find_package(Geant4 REQUIRED)` followed by
+`find_package(GeoModelG4 REQUIRED CONFIG)` and link `GeoModel2G4` and `GeoMaterial2G4`.
+Pass `-DGeant4_DIR="$(brew --prefix geant4)/lib/cmake/Geant4"` when configuring.
+
 Clients that only need the geometry kernel can use `find_package(GeoModelCore
 REQUIRED CONFIG)`; SQLite I/O is exposed by `GeoModelIO`.
 
