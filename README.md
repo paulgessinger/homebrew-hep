@@ -88,6 +88,32 @@ This product includes software developed by Members of the Geant4
 Collaboration (https://cern.ch/geant4). The upstream Geant4 Software License
 is installed with the package.
 
+## GeoModel
+
+```sh
+brew install paulgessinger/hep/geomodel
+```
+
+GeoModel 6.32.0 is built with C++20 and includes GeoModelCore, GeoModelIO and
+GeoModelTools, including XML/GDML conversion and SQLite geometry storage.
+It uses Homebrew's Eigen, nlohmann-json, SQLite, Xerces-C and zlib.
+Visualization, GeoModelG4, FullSimLight/FSL, examples and upstream tests are
+disabled. The formula test builds a separate CMake consumer and checks a
+geometry's name, material and volume after a SQLite write/read round trip.
+
+For CMake clients:
+
+```cmake
+find_package(GeoModelTools REQUIRED CONFIG)
+target_compile_features(my_detector PRIVATE cxx_std_20)
+target_link_libraries(my_detector PRIVATE
+  GeoModelCore::GeoModelKernel GeoModelIO::GeoModelRead GeoModelTools::GeoModelXml)
+```
+
+Configure with `-DCMAKE_PREFIX_PATH="$(brew --prefix geomodel)"`.
+Clients that only need the geometry kernel can use `find_package(GeoModelCore
+REQUIRED CONFIG)`; SQLite I/O is exposed by `GeoModelIO`.
+
 ## Local development
 
 To work directly from a checkout, register it as a local tap. If the tap is
@@ -159,6 +185,7 @@ Geant4 upgrades can also require rebuilding and retesting DD4hep.
 
 - [DD4hep](https://github.com/AIDASoft/DD4hep)
 - [Geant4](https://github.com/Geant4/geant4)
+- [GeoModel](https://gitlab.cern.ch/GeoModelDev/GeoModel)
 - [Homebrew tap maintenance](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap)
 - [Homebrew bottles](https://docs.brew.sh/Bottles)
 - [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
