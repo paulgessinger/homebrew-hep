@@ -5,6 +5,11 @@ class Geomodel < Formula
   sha256 "05fcdd939d6f6200f5fd6565843f501395c44783c700c19a5f9a1ff023cb5b88"
   license "Apache-2.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/paulgessinger/hep"
+    sha256 arm64_tahoe: "f0eabf70cf9cf4867f6c9404ed733d8d2988fabf34dd26fd51de33175f7a0ee9"
+  end
+
   depends_on "cmake" => [:build, :test]
   depends_on "ninja" => :build
   depends_on "eigen"
